@@ -644,6 +644,8 @@ class MonadTask():
                 self.browser.wait(1)
                 return True
 
+        self.logit('wait_popup', 'Fail to load popup window')
+
         return False
 
     def wait_cofirm(self, n_wait_sec=30):
@@ -729,9 +731,9 @@ class MonadTask():
                 self.browser.wait(1)
                 self.logit(None, 'Click Sign Button')
 
-                self.wait_popup()
-                self.okx_confirm()
-                self.wait_cofirm()
+                if self.wait_popup():
+                    self.okx_confirm()
+                    self.wait_cofirm()
 
     def account_register(self):
         tab = self.browser.latest_tab
@@ -745,9 +747,9 @@ class MonadTask():
                 self.browser.wait(1)
                 self.logit(None, 'Click New account Button')
 
-                self.wait_popup()
-                self.okx_confirm()
-                self.wait_cofirm()
+                if self.wait_popup():
+                    self.okx_confirm()
+                    self.wait_cofirm()
 
     def give_nickname(self):
         tab = self.browser.latest_tab
@@ -798,9 +800,9 @@ class MonadTask():
                     self.logit(None, f'[WARNING] {ele_info.html}')
                     self.logit(None, f'[WARNING] {s_info}')
 
-                self.wait_popup()
-                self.okx_confirm()
-                self.wait_cofirm()
+                if self.wait_popup():
+                    self.okx_confirm()
+                    self.wait_cofirm()
 
                 n_wait_sec = 20
                 j = 0
@@ -856,7 +858,7 @@ class MonadTask():
         tab = self.browser.latest_tab
 
         def get_claim_status():
-            self.browser.wait(3)
+            self.browser.wait(5)
             ele_info = tab.ele('@@tag()=p@@class:rounded-', timeout=1) # noqa
             if not isinstance(ele_info, NoneElement):
                 s_info = ele_info.text
@@ -883,20 +885,20 @@ class MonadTask():
                 self.browser.wait(1)
                 self.logit(None, '[Daily Check-In] Click Claim Button ...')
 
-                self.wait_popup()
-                self.okx_confirm()
-                self.wait_cofirm()
+                if self.wait_popup():
+                    self.okx_confirm()
+                    self.wait_cofirm()
 
-                n_wait_sec = 15
-                j = 0
-                while j < n_wait_sec:
-                    j += 1
-                    self.browser.wait(1)
-                    self.logit(None, f'Wait to get time countdown {j}/{n_wait_sec}')
+                    n_wait_sec = 15
+                    j = 0
+                    while j < n_wait_sec:
+                        j += 1
+                        self.browser.wait(1)
+                        self.logit(None, f'Wait to get time countdown {j}/{n_wait_sec}')
 
-                    if get_claim_status():
-                        self.logit(None, 'Daily Check-In Success ✅')
-                        return True
+                        if get_claim_status():
+                            self.logit(None, 'Daily Check-In Success ✅')
+                            return True
 
                 return False
             else:
@@ -977,9 +979,9 @@ class MonadTask():
                                                                         ele_btn_okx = tab_shadow_okx.ele('@@tag()=wui-flex', timeout=2) # noqa
                                                                         if not isinstance(ele_btn_okx, NoneElement):
                                                                             ele_btn_okx.click()
-                                                                            self.wait_popup()
-                                                                            self.okx_connect()
-                                                                            self.wait_cofirm()
+                                                                            if self.wait_popup():
+                                                                                self.okx_connect()
+                                                                                self.wait_cofirm()
                     self.connect_wallet()
                     self.account_register()
                     self.give_nickname()
@@ -1024,13 +1026,18 @@ class MonadTask():
             self.logit('monad_redbrick_run', 'okx login failed [ERROR]')
             return False
 
-        if not self.monad_redbrick_login():
-            return False
+        for i in range(1, DEF_NUM_TRY+1):
+            if self.monad_redbrick_login():
+                break
 
-        self.mint_game_pass()
+        for i in range(1, DEF_NUM_TRY+1):
+            if self.mint_game_pass():
+                break
 
-        if self.daily_checkin() is False:
-            return False
+        for i in range(1, DEF_NUM_TRY+1):
+            self.logit(None, f'[daily_checkin] try_i={i}/{DEF_NUM_TRY}')
+            if self.daily_checkin():
+                break
 
         self.logit('monad_redbrick_run', 'Finished!')
         self.close()
