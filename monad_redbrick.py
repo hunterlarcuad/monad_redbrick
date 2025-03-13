@@ -18,6 +18,8 @@ from fun_utils import ding_msg
 from fun_utils import load_file
 from fun_utils import save2file
 from fun_utils import format_ts
+from fun_utils import time_difference
+from fun_utils import seconds_to_hms
 
 from conf import DEF_LOCAL_PORT
 from conf import DEF_INCOGNITO
@@ -211,7 +213,8 @@ class MonadTask():
                 n_width_tab = self.browser.get_tab(tab_id).rect.size[0]
                 if n_width_tab < n_width_max:
                     s_title = self.browser.get_tab(tab_id).title
-                    self.logit(None, f'Close tab:{s_title} width={n_width_tab} < {n_width_max}') # noqa
+                    # self.logit(None, f'Close tab:{s_title} width={n_width_tab} < {n_width_max}') # noqa
+                    self.logit(None, f'Close popup tab: {s_title}') # noqa
                     self.browser.get_tab(tab_id).close()
                     return True
         return False
@@ -853,6 +856,7 @@ class MonadTask():
         tab = self.browser.latest_tab
 
         def get_claim_status():
+            self.browser.wait(3)
             ele_info = tab.ele('@@tag()=p@@class:rounded-', timeout=1) # noqa
             if not isinstance(ele_info, NoneElement):
                 s_info = ele_info.text
@@ -861,6 +865,7 @@ class MonadTask():
                 if next_claim_ts is None:
                     return False
                 else:
+                    next_claim_ts += 30
                     next_claim_time = format_ts(next_claim_ts, 2, TZ_OFFSET)
                     self.update_status(IDX_NEXT_CLAIM, next_claim_time)
                     self.update_date(IDX_CLAIM_DATE)
@@ -873,10 +878,10 @@ class MonadTask():
             ele_btn = ele_blk.ele('@@tag()=button@@text()=Claim', timeout=1) # noqa
             if not isinstance(ele_btn, NoneElement):
                 if not ele_btn.click():
-                    self.logit(None, 'Fail to Click Claim Button')
+                    self.logit(None, '[Daily Check-In] Fail to Click Claim Button')
                     return False
                 self.browser.wait(1)
-                self.logit(None, 'Click Claim Button')
+                self.logit(None, '[Daily Check-In] Click Claim Button ...')
 
                 self.wait_popup()
                 self.okx_confirm()
@@ -890,6 +895,7 @@ class MonadTask():
                     self.logit(None, f'Wait to get time countdown {j}/{n_wait_sec}')
 
                     if get_claim_status():
+                        self.logit(None, 'Daily Check-In Success ✅')
                         return True
 
                 return False
@@ -1043,19 +1049,17 @@ def send_msg(instMonadTask, lst_success):
             if lst_status is None:
                 lst_status = [s_profile, -1]
 
-            s_info += '- {} {} {} {}\n'.format(
+            s_info += '- {},{}\n'.format(
                 s_profile,
-                lst_status[1],
-                lst_status[2],
-                lst_status[3],
+                lst_status[IDX_NEXT_CLAIM],
             )
         d_cont = {
-            'title': 'Daily Active Finished! [monad_redbrick]',
+            'title': 'Daily Check-In Finished! [monad_redbrick]',
             'text': (
-                'Daily Active [monad_redbrick]\n'
-                '- {}\n'
+                'Daily Check-In [monad_redbrick]\n'
+                '- account,time_next_claim\n'
                 '{}\n'
-                .format(DEF_HEADER_STATUS, s_info)
+                .format(s_info)
             )
         }
         ding_msg(d_cont, DEF_DING_TOKEN, msgtype="markdown")
@@ -1086,26 +1090,16 @@ def main(args):
     n = 0
 
     lst_success = []
+    lst_wait = []
 
-    def is_complete(lst_status):
-        b_ret = True
-        date_now = format_ts(time.time(), style=1, tz_offset=TZ_OFFSET)
-
+    def get_sec_wait(lst_status):
+        n_sec_wait = 0
         if lst_status:
-            for idx_status in [IDX_CLAIM_DATE]:
-                claimed_date = lst_status[idx_status]
-                if date_now != claimed_date:
-                    b_ret = b_ret and False
-            date_update = lst_status[-1][:10]
-        else:
-            date_update = None
-            b_ret = False
+            avail_time = lst_status[IDX_NEXT_CLAIM]
+            if avail_time:
+                n_sec_wait = time_difference(avail_time) + 1
 
-        num_try_pre = instMonadTask.get_pre_num_try(s_profile)
-        if (date_update == date_now) and (num_try_pre == NUM_MAX_TRY_PER_DAY):
-            b_ret = True
-
-        return b_ret
+        return n_sec_wait
 
     # 将已完成的剔除掉
     instMonadTask.status_load()
@@ -1114,12 +1108,21 @@ def main(args):
         s_profile = profiles[i]
         if s_profile in instMonadTask.dic_status:
             lst_status = instMonadTask.dic_status[s_profile]
-            if is_complete(lst_status):
+            n_sec_wait = get_sec_wait(lst_status)
+            if n_sec_wait > 0:
+                lst_wait.append([s_profile, n_sec_wait])
+                # logger.info(f'[{s_profile}] 还需等待{n_sec_wait}秒') # noqa
                 n += 1
                 profiles.pop(i)
         else:
             continue
     logger.info('#'*40)
+    if len(lst_wait) > 0:
+        n_top = 5
+        logger.info(f'***** Top {n_top} wait list')
+        sorted_lst_wait = sorted(lst_wait, key=lambda x: x[1], reverse=False)
+        for (s_profile, n_sec_wait) in sorted_lst_wait[:n_top]:
+            logger.info(f'[{s_profile}] 还需等待{seconds_to_hms(n_sec_wait)}') # noqa
     percent = math.floor((n / total) * 100)
     logger.info(f'Progress: {percent}% [{n}/{total}]') # noqa
 
@@ -1156,7 +1159,6 @@ def main(args):
         max_try_except = 3
         for j in range(1, max_try_except+1):
             try:
-                is_claim = False
                 if j > 1:
                     logger.info(f'⚠️ 正在重试，当前是第{j}次执行，最多尝试{max_try_except}次 [{s_profile}]') # noqa
 
@@ -1168,19 +1170,15 @@ def main(args):
                 else:
                     lst_status = None
 
-                is_claim = False
-                is_ready_claim = True
-                if is_complete(lst_status):
+                n_sec_wait = get_sec_wait(lst_status)
+                if n_sec_wait > 0:
                     logger.info(f'[{s_profile}] Last update at {lst_status[IDX_UPDATE]}') # noqa
-                    is_ready_claim = False
                     break
-                if is_ready_claim:
-                    is_claim = _run()
-
-                if is_claim:
-                    lst_success.append(s_profile)
-                    instMonadTask.close()
-                    break
+                else:
+                    if _run():
+                        lst_success.append(s_profile)
+                        instMonadTask.close()
+                        break
 
             except Exception as e:
                 logger.info(f'[{s_profile}] An error occurred: {str(e)}')

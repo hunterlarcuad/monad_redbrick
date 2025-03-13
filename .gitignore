@@ -4,3 +4,4 @@ conf.py
 *.pyc
 datas
 .DS_Store
+.vscode
