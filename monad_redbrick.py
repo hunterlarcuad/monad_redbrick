@@ -509,7 +509,7 @@ class MonadTask():
                         self.browser.wait(1)
                     else:
                         self.logit('init_okx', '[ERROR] What is this ... [quit]') # noqa
-                        tab.quit()
+                        self.browser.quit()
 
         self.logit('init_okx', 'login failed [ERROR]')
         return False
