@@ -719,6 +719,59 @@ class MonadTask():
                 return True
         return False
 
+    def shadow_connect_wallet(self):
+        """
+        shadow-root
+        Connect Wallet
+        list
+        """
+        tab = self.browser.latest_tab
+        ele_blk_1 = tab.ele('@@tag()=w3m-modal@@class=open', timeout=2) # noqa
+        if not isinstance(ele_blk_1, NoneElement):
+            tab_shadow_1 = ele_blk_1.shadow_root
+            ele_blk_2 = tab_shadow_1.ele('@@tag()=wui-flex', timeout=2) # noqa
+            if not isinstance(ele_blk_2, NoneElement):
+
+                ele_blk_3 = ele_blk_2.ele('@@tag()=wui-card', timeout=2) # noqa
+                if not isinstance(ele_blk_3, NoneElement):
+
+                    ele_blk_4 = ele_blk_3.ele('@@tag()=w3m-router', timeout=2) # noqa
+                    if not isinstance(ele_blk_4, NoneElement):
+                        tab_shadow_router = ele_blk_4.shadow_root
+
+                        ele_blk_5 = tab_shadow_router.ele('@@tag()=div', timeout=2) # noqa
+                        if not isinstance(ele_blk_5, NoneElement):
+                            ele_blk_6 = ele_blk_5.ele('@@tag()=w3m-connect-view', timeout=2) # noqa
+                            if not isinstance(ele_blk_6, NoneElement):
+                                tab_shadow_view = ele_blk_6.shadow_root
+
+                                ele_blk_7 = tab_shadow_view.ele('@@tag()=wui-flex', timeout=2) # noqa
+                                if not isinstance(ele_blk_2, NoneElement):
+
+                                    ele_blk_8 = tab_shadow_view.ele('@@tag()=w3m-wallet-login-list', timeout=2) # noqa
+                                    if not isinstance(ele_blk_8, NoneElement):
+                                        tab_shadow_list = ele_blk_8.shadow_root
+
+                                        ele_blk_9 = tab_shadow_list.ele('@@tag()=wui-flex', timeout=2) # noqa
+                                        if not isinstance(ele_blk_9, NoneElement):
+
+                                            ele_blk_10 = ele_blk_9.ele('@@tag()=w3m-connector-list', timeout=2) # noqa
+                                            if not isinstance(ele_blk_10, NoneElement):
+                                                tab_shadow_conn = ele_blk_10.shadow_root
+                                                ele_blk_11 = tab_shadow_conn.ele('@@tag()=wui-flex', timeout=2) # noqa
+                                                if not isinstance(ele_blk_11, NoneElement):
+                                                    ele_blk_12 = ele_blk_11.ele('@@tag()=w3m-connect-injected-widget', timeout=2) # noqa
+                                                    if not isinstance(ele_blk_12, NoneElement):
+                                                        tab_shadow_okx = ele_blk_12.shadow_root
+                                                        ele_btn_okx = tab_shadow_okx.ele('@@tag()=wui-flex', timeout=2) # noqa
+                                                        if not isinstance(ele_btn_okx, NoneElement):
+                                                            ele_btn_okx.click()
+                                                            if self.wait_popup():
+                                                                self.okx_connect()
+                                                                self.wait_cofirm()
+                                                                return True
+        return False
+
     def connect_wallet(self):
         tab = self.browser.latest_tab
         ele_info = tab.ele('@@tag()=p@@text():Connect Wallet', timeout=1) # noqa
@@ -885,6 +938,9 @@ class MonadTask():
                 self.browser.wait(1)
                 self.logit(None, '[Daily Check-In] Click Claim Button ...')
 
+                if self.shadow_connect_wallet():
+                    return False
+
                 if self.wait_popup():
                     self.okx_confirm()
                     self.wait_cofirm()
@@ -939,49 +995,8 @@ class MonadTask():
                         ele_btn.click(by_js=True)
                         self.logit(None, 'Continue with wallet ...') # noqa
 
-                        ele_blk_1 = tab.ele('@@tag()=w3m-modal@@class=open', timeout=2) # noqa
-                        if not isinstance(ele_blk_1, NoneElement):
-                            tab_shadow_1 = ele_blk_1.shadow_root
-                            ele_blk_2 = tab_shadow_1.ele('@@tag()=wui-flex', timeout=2) # noqa
-                            if not isinstance(ele_blk_2, NoneElement):
+                        self.shadow_connect_wallet()
 
-                                ele_blk_3 = ele_blk_2.ele('@@tag()=wui-card', timeout=2) # noqa
-                                if not isinstance(ele_blk_3, NoneElement):
-
-                                    ele_blk_4 = ele_blk_3.ele('@@tag()=w3m-router', timeout=2) # noqa
-                                    if not isinstance(ele_blk_4, NoneElement):
-                                        tab_shadow_router = ele_blk_4.shadow_root
-
-                                        ele_blk_5 = tab_shadow_router.ele('@@tag()=div', timeout=2) # noqa
-                                        if not isinstance(ele_blk_5, NoneElement):
-                                            ele_blk_6 = ele_blk_5.ele('@@tag()=w3m-connect-view', timeout=2) # noqa
-                                            if not isinstance(ele_blk_6, NoneElement):
-                                                tab_shadow_view = ele_blk_6.shadow_root
-
-                                                ele_blk_7 = tab_shadow_view.ele('@@tag()=wui-flex', timeout=2) # noqa
-                                                if not isinstance(ele_blk_2, NoneElement):
-
-                                                    ele_blk_8 = tab_shadow_view.ele('@@tag()=w3m-wallet-login-list', timeout=2) # noqa
-                                                    if not isinstance(ele_blk_8, NoneElement):
-                                                        tab_shadow_list = ele_blk_8.shadow_root
-
-                                                        ele_blk_9 = tab_shadow_list.ele('@@tag()=wui-flex', timeout=2) # noqa
-                                                        if not isinstance(ele_blk_9, NoneElement):
-
-                                                            ele_blk_10 = ele_blk_9.ele('@@tag()=w3m-connector-list', timeout=2) # noqa
-                                                            if not isinstance(ele_blk_10, NoneElement):
-                                                                tab_shadow_conn = ele_blk_10.shadow_root
-                                                                ele_blk_11 = tab_shadow_conn.ele('@@tag()=wui-flex', timeout=2) # noqa
-                                                                if not isinstance(ele_blk_11, NoneElement):
-                                                                    ele_blk_12 = ele_blk_11.ele('@@tag()=w3m-connect-injected-widget', timeout=2) # noqa
-                                                                    if not isinstance(ele_blk_12, NoneElement):
-                                                                        tab_shadow_okx = ele_blk_12.shadow_root
-                                                                        ele_btn_okx = tab_shadow_okx.ele('@@tag()=wui-flex', timeout=2) # noqa
-                                                                        if not isinstance(ele_btn_okx, NoneElement):
-                                                                            ele_btn_okx.click()
-                                                                            if self.wait_popup():
-                                                                                self.okx_connect()
-                                                                                self.wait_cofirm()
                     self.connect_wallet()
                     self.account_register()
                     self.give_nickname()
