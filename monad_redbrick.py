@@ -288,17 +288,21 @@ class MonadTask():
         """
         s_url = f'chrome-extension://{EXTENSION_ID_OKX}/home.html'
 
-        tab = self.browser.new_tab(s_url)
-        self.browser.wait(1)
+        for i in range(1, DEF_NUM_TRY+1):
+            tab = self.browser.new_tab(s_url)
+            self.browser.wait(1)
 
-        self.browser.close_tabs(tab, others=True)
-        self.browser.wait(2)
+            self.browser.close_tabs(tab, others=True)
+            self.browser.wait(2)
 
-        self.logit('init_okx', f'tabs_count={self.browser.tabs_count}')
+            self.logit('init_okx', f'tabs_count={self.browser.tabs_count}')
+
+            if self.browser.tabs_count == 1:
+                break
 
         self.save_screenshot(name='okx_1.jpg')
 
-        tab = self.browser.latest_tab
+        # tab = self.browser.latest_tab
         ele_info = tab.ele('@@tag()=div@@class:balance', timeout=2) # noqa
         if not isinstance(ele_info, NoneElement):
             s_info = ele_info.text
@@ -629,7 +633,7 @@ class MonadTask():
         if len(self.browser.tab_ids) != 2:
             return False
 
-        tab_new = self.browser.latest_tab
+        tab_new = self.browser.get_tab(title='OKX Wallet')
         max_wait_sec = 30
         i = 1
         while i < max_wait_sec:
