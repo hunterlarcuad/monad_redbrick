@@ -196,29 +196,6 @@ class MonadTask():
             s_text += f' {s_info}'
         logger.info(s_text)
 
-    def close_popup_tabs(self, s_keep='OKX Web3'):
-        # 关闭 OKX 弹窗
-        if len(self.browser.tab_ids) > 1:
-            self.logit('close_popup_tabs', None)
-            n_width_max = -1
-            for tab_id in self.browser.tab_ids:
-                n_width_tab = self.browser.get_tab(tab_id).rect.size[0]
-                if n_width_max < n_width_tab:
-                    n_width_max = n_width_tab
-
-            tab_ids = self.browser.tab_ids
-            n_tabs = len(tab_ids)
-            for i in range(n_tabs-1, -1, -1):
-                tab_id = tab_ids[i]
-                n_width_tab = self.browser.get_tab(tab_id).rect.size[0]
-                if n_width_tab < n_width_max:
-                    s_title = self.browser.get_tab(tab_id).title
-                    # self.logit(None, f'Close tab:{s_title} width={n_width_tab} < {n_width_max}') # noqa
-                    self.logit(None, f'Close popup tab: {s_title}') # noqa
-                    self.browser.get_tab(tab_id).close()
-                    return True
-        return False
-
     def is_exist(self, s_title, s_find, match_type):
         b_ret = False
         if match_type == 'fuzzy':
@@ -229,33 +206,6 @@ class MonadTask():
                 b_ret = True
 
         return b_ret
-
-    def check_start_tabs(self, s_keep='新标签页', match_type='fuzzy'):
-        """
-        关闭多余的标签页
-        match_type
-            precise 精确匹配
-            fuzzy 模糊匹配
-        """
-        if self.browser.tabs_count > 1:
-            self.logit('check_start_tabs', None)
-            tab_ids = self.browser.tab_ids
-            n_tabs = len(tab_ids)
-            for i in range(n_tabs-1, -1, -1):
-                tab_id = tab_ids[i]
-                s_title = self.browser.get_tab(tab_id).title
-                # print(f's_title={s_title}')
-                if self.is_exist(s_title, s_keep, match_type):
-                    continue
-                if len(self.browser.tab_ids) == 1:
-                    break
-                self.logit(None, f'Close tab:{s_title}')
-                self.browser.get_tab(tab_id).close()
-
-            tab = self.browser.latest_tab
-            self.logit(None, f'Keeped tab: {tab.title}')
-            return True
-        return False
 
     def okx_secure_wallet(self):
         tab = self.browser.latest_tab
@@ -336,19 +286,17 @@ class MonadTask():
         """
         chrome-extension://jiofmdifioeejeilfkpegipdjiopiekl/popup/index.html
         """
-        # self.check_start_tabs()
         s_url = f'chrome-extension://{EXTENSION_ID_OKX}/home.html'
-        tab = self.browser.latest_tab
-        tab.get(s_url)
-        # self.browser.wait.load_start()
-        self.browser.wait(3)
-        self.close_popup_tabs()
-        self.check_start_tabs('OKX Wallet', 'precise')
+
+        tab = self.browser.new_tab(s_url)
+        self.browser.wait(1)
+
+        self.browser.close_tabs(tab, others=True)
+        self.browser.wait(2)
 
         self.logit('init_okx', f'tabs_count={self.browser.tabs_count}')
 
         self.save_screenshot(name='okx_1.jpg')
-        # pdb.set_trace()
 
         tab = self.browser.latest_tab
         ele_info = tab.ele('@@tag()=div@@class:balance', timeout=2) # noqa
