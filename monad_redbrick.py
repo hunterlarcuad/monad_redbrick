@@ -46,7 +46,7 @@ from conf import logger
 
 """
 2025.03.12
-https://redbrick.land/web3-portal?tab=monad_testnet
+https://redbrick.land/web3-portal?tab=monad_experience
 """
 
 # Wallet balance
@@ -195,17 +195,6 @@ class MonadTask():
         if s_info:
             s_text += f' {s_info}'
         logger.info(s_text)
-
-    def is_exist(self, s_title, s_find, match_type):
-        b_ret = False
-        if match_type == 'fuzzy':
-            if s_title.find(s_find) >= 0:
-                b_ret = True
-        else:
-            if s_title == s_find:
-                b_ret = True
-
-        return b_ret
 
     def okx_secure_wallet(self):
         tab = self.browser.latest_tab
@@ -809,23 +798,23 @@ class MonadTask():
                     self.okx_confirm()
                     self.wait_cofirm()
 
-                n_wait_sec = 20
-                j = 0
-                while j < n_wait_sec:
-                    j += 1
-                    self.browser.wait(1)
-                    self.logit(None, f'Wait minting msg {j}/{n_wait_sec}')
+                    n_wait_sec = 20
+                    j = 0
+                    while j < n_wait_sec:
+                        j += 1
+                        self.browser.wait(1)
+                        self.logit(None, f'Wait minting msg {j}/{n_wait_sec}')
 
-                    ele_info = tab.ele('@@tag()=p@@text():Refill it with Play Credits and start competing!', timeout=1) # noqa
-                    if not isinstance(ele_info, NoneElement):
-                        self.logit(None, 'minted your Game Pass [OK]')
+                        ele_info = tab.ele('@@tag()=p@@text():Refill it with Play Credits and start competing!', timeout=1) # noqa
+                        if not isinstance(ele_info, NoneElement):
+                            self.logit(None, 'minted your Game Pass [OK]')
 
-                        ele_btn = tab.ele('@@tag()=button@@text()=Done', timeout=1) # noqa
-                        if not isinstance(ele_btn, NoneElement):
-                            ele_btn.click(by_js=True)
-                            self.browser.wait(1)
+                            ele_btn = tab.ele('@@tag()=button@@text()=Done', timeout=1) # noqa
+                            if not isinstance(ele_btn, NoneElement):
+                                ele_btn.click(by_js=True)
+                                self.browser.wait(1)
 
-                        return True
+                            return True
 
         return False
 
@@ -890,10 +879,16 @@ class MonadTask():
                 self.browser.wait(1)
                 self.logit(None, '[Daily Check-In] Click Claim Button ...')
 
+                # Please complete your registration and SNS mission.
+                ele_info = tab.ele('@@tag()=p@@text():Please complete your registration and SNS mission', timeout=1) # noqa
+                if not isinstance(ele_info, NoneElement):
+                    self.logit(None, f'[FAIL] {ele_info.text}')
+                    return False
+
                 if self.shadow_connect_wallet():
                     return False
 
-                if self.wait_popup():
+                if self.wait_popup(n_wait_sec=10):
                     self.okx_confirm()
                     self.wait_cofirm()
 
@@ -902,7 +897,7 @@ class MonadTask():
                     while j < n_wait_sec:
                         j += 1
                         self.browser.wait(1)
-                        self.logit(None, f'Wait to get time countdown {j}/{n_wait_sec}')
+                        self.logit(None, f'Wait to get time countdown {j}/{n_wait_sec}') # noqa
 
                         if get_claim_status():
                             self.logit(None, 'Daily Check-In Success ✅')
@@ -927,8 +922,8 @@ class MonadTask():
                 self.browser.wait(1)
                 self.logit(None, 'Cancel Unknown transaction')
 
-            s_url = 'https://redbrick.land/web3-portal?tab=monad_testnet' # noqa
-            tab.get(s_url)
+            s_url = 'https://redbrick.land/web3-portal?tab=monad_experience' # noqa
+            tab.get(s_url, timeout=60, retry=1)
             # self.browser.wait.load_start()
             self.browser.wait(3)
 
